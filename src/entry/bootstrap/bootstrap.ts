@@ -47,28 +47,34 @@ async function bootstrapImpl() {
         .catch(console.warn); // it's good to explicitly catch and inspect any error
     const logger = perfLogger();
     // 1. 检查权限
-    if (Platform.OS === "android" && Platform.Version >= 30) {
-        const hasPermission = await NativeUtils.checkStoragePermission();
-        if (
-            !hasPermission &&
-            !PersistStatus.get("app.skipBootstrapStorageDialog")
-        ) {
-            showDialog("CheckStorage");
-        }
-    } else {
-        const [readStoragePermission, writeStoragePermission] =
-            await Promise.all([
-                check(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE),
-                check(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE),
-            ]);
-        if (
-            !(
-                readStoragePermission === "granted" &&
-                writeStoragePermission === "granted"
-            )
-        ) {
-            await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
-            await request(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE);
+    // iOS / TrollStore：沙盒内 Documents 与 Caches 天然可读写，
+    // 不需要也不存在 Android 的 READ/WRITE_EXTERNAL_STORAGE，
+    // 若走原 else 分支会用 PERMISSIONS.ANDROID.* 调用 react-native-permissions，
+    // 在 iOS 上直接抛错并让 bootstrap 进入 Fatal 状态。这里显式跳过。
+    if (Platform.OS === "android") {
+        if (Platform.Version >= 30) {
+            const hasPermission = await NativeUtils.checkStoragePermission();
+            if (
+                !hasPermission &&
+                !PersistStatus.get("app.skipBootstrapStorageDialog")
+            ) {
+                showDialog("CheckStorage");
+            }
+        } else {
+            const [readStoragePermission, writeStoragePermission] =
+                await Promise.all([
+                    check(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE),
+                    check(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE),
+                ]);
+            if (
+                !(
+                    readStoragePermission === "granted" &&
+                    writeStoragePermission === "granted"
+                )
+            ) {
+                await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
+                await request(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE);
+            }
         }
     }
     logger.mark("权限检查完成");

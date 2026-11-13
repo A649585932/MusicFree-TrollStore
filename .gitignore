@@ -79,7 +79,15 @@ keystore.properties
 
 .vscode/
 tmp/
-scripts/
+# 忽略 scripts/ 目录内容，但 TrollStore 打包脚本 / entitlements / 自检必须入库，
+# 否则 CI checkout 后拿不到构建脚本。Git 不允许在忽略的目录内直接反选子文件，
+# 因此先放行目录本身，再用 scripts/* 逐文件反选。
+!scripts/
+scripts/*
+!scripts/build-trollstore.sh
+!scripts/trollstore.entitlements.plist
+!scripts/trollstore-full-access.entitlements.plist
+!scripts/verify-ios-patch.mjs
 
 *.log
 # Expo

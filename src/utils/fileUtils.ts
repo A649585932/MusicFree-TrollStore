@@ -1,6 +1,7 @@
 import pathConst from "@/constants/pathConst";
 import FastImage from "react-native-fast-image";
 import RNFS, {
+    DocumentDirectoryPath,
     PicturesDirectoryPath,
     copyFile,
     downloadFile,
@@ -10,11 +11,20 @@ import RNFS, {
     unlink,
     writeFile,
 } from "react-native-fs";
+import { Platform } from "react-native";
 import { errorLog } from "./log";
 import path from "path-browserify";
 import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 
-const galleryBasePath = `${PicturesDirectoryPath}/MusicFree/`;
+/**
+ * react-native-fs 在 iOS 上没有 PicturesDirectoryPath（值为 undefined），
+ * 原写法会得到 "undefined/MusicFree/" 这个非法相对路径，mkdir 必失败。
+ * iOS 改用应用沙盒 Documents 目录；真要写系统相册需要
+ * @react-native-camera-roll/camera-roll 授权，此处保持沙盒内保存。
+ */
+const galleryBasePath = `${
+    Platform.OS === "ios" ? DocumentDirectoryPath : PicturesDirectoryPath
+}/MusicFree/`;
 
 /**
  * 将图片保存到相册
